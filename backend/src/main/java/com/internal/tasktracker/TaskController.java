@@ -2,8 +2,10 @@ package com.internal.tasktracker;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 
@@ -12,6 +14,8 @@ import java.util.*;
 public class TaskController {
 
     private static final Logger log = LoggerFactory.getLogger(TaskController.class);
+
+    private static final int MAX_PAGE_SIZE = 100;
 
     private final TaskRepository taskRepository;
 
@@ -33,7 +37,20 @@ public class TaskController {
         // Parse status filter
         String normalizedStatus = null;
         if (status != null && !status.isEmpty()) {
-            normalizedStatus = TaskStatus.valueOf(status.toUpperCase()).name();
+            try {
+                normalizedStatus = TaskStatus.valueOf(status.toUpperCase()).name();
+            } catch (IllegalArgumentException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Invalid status '" + status + "'. Allowed: " + Arrays.toString(TaskStatus.values()));
+            }
+        }
+
+        if (page < 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "page must be >= 1");
+        }
+        if (pageSize < 1 || pageSize > MAX_PAGE_SIZE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "pageSize must be between 1 and " + MAX_PAGE_SIZE);
         }
 
         log.debug("Searching tasks q='{}' status={} page={} pageSize={}",
