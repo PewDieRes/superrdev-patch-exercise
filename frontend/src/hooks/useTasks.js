@@ -11,6 +11,7 @@ export function useTasks(query, status, page, pageSize) {
     const controller = new AbortController();
 
     setLoading(true);
+    setError(null);
 
     fetchTasks({ query, status, page, pageSize, signal: controller.signal })
       .then((data) => {
@@ -21,6 +22,7 @@ export function useTasks(query, status, page, pageSize) {
       .catch((err) => {
         if (err.name === 'AbortError') return;
         setError(err.message);
+        setLoading(false);
       });
 
     return () => controller.abort();
