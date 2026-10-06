@@ -2,6 +2,8 @@ package com.internal.tasktracker;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -56,17 +58,12 @@ public class TaskController {
         log.debug("Searching tasks q='{}' status={} page={} pageSize={}",
                 query, normalizedStatus, page, pageSize);
 
-        List<Task> allResults = taskRepository.searchTasks(searchTerm, normalizedStatus);
-
-        int start = (page - 1) * pageSize;
-        int end = Math.min(start + pageSize, allResults.size());
-        List<Task> pageResults = (start < allResults.size())
-                ? allResults.subList(start, end)
-                : Collections.emptyList();
+        Page<Task> result = taskRepository.searchTasks(
+                searchTerm, normalizedStatus, PageRequest.of(page - 1, pageSize));
 
         Map<String, Object> response = new LinkedHashMap<>();
-        response.put("items", pageResults);
-        response.put("total", allResults.size());
+        response.put("items", result.getContent());
+        response.put("total", result.getTotalElements());
         response.put("page", page);
         response.put("pageSize", pageSize);
 
